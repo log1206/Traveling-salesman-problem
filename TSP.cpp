@@ -1,5 +1,5 @@
 #include <bits/stdc++.h> // all library (੭ु´･ω･`)੭ु⁾⁾
-
+#include <chrono>
 
 using namespace std;
 
@@ -9,13 +9,59 @@ using namespace std;
 
 int** graph; //graph for city relationship
 int n;  //n city
- 
+
 // assumption: every time start at zero
 
+//for branch and bound
 int final_cost = INT_MAX;
-int *final_path_f_BB;
+int final_path[16]; 
+bool visited[16]; 
+
+
+
 /* we know that brute force is to try every possible path
 so we can calculate every path's cost  and find which is the smallest*/
+
+int firSmall(int row) //In order to fine the smallest in the row
+{ 
+	int min = INT_MAX; 
+	for (int i=0; i<n; i++) 
+		if (graph[row][i]<min && row != i ) //smaller and not itself 
+			min =graph[row][i]; 
+	return min; 
+} 
+
+int firSmall_c(int col) //In order to fine the smallest in the row
+{ 
+	int min = INT_MAX; 
+	for (int i=0; i<n; i++) 
+		if (graph[i][col]<min && col != i && visited[i]!= true) //smaller and not itself 
+			min =graph[i][col]; 
+	return min; 
+} 
+
+
+
+// function to find the second minimum edge cost 
+// having an end at the vertex i 
+int secSmall(int row) 
+{ 
+	int first = INT_MAX, second = INT_MAX; 
+	for (int j=0; j<n; j++) 
+	{ 
+		if (row == j) 
+			continue; 
+
+		if (graph[row][j] <= first) //smaller than first
+		{ 
+			second = first; 
+			first = graph[row][j]; 
+		} 
+		else if (graph[row][j] <= second && graph[row][j] != first) // smaller than second 
+			second = graph[row][j]; 
+	} 
+	return second; 
+} 
 
 void TSP_brute(){   
 
@@ -52,6 +98,7 @@ void TSP_brute(){
     // save to file
     fstream file;
     file.open("BF.txt",ios::out);
+    file.setf(ios::fixed);
     file << "Cost     : "<< cost << endl;
     file << "Solution : 0 - ";
     for(int i=0;i<final_path.size();i++){
@@ -63,110 +110,153 @@ void TSP_brute(){
 }
 
 
-void TSP_BB_lev(int cur_bound, int cur_weight, int level, int cur_path[], bool visited[]){
-
-    if (level==n) //if is final point
+void TSPLev(int boundN, int level, int pathN[]) 
+{ 
+	cout<<"";
+  //  cout << "level: "<< level << " bound: " << boundN<<endl;
+	if (level==n) //if reach final level
 	{ 
-		if (graph[cur_path[level-1]][cur_path[0]] != -1) //last node to head
-		{ 
-			// cur_res has the total weight of the 
-			// solution we got 
-			int cur_cost = cur_weight + graph[cur_path[level-1]][cur_path[0]]; 
+		
 
-			// Update final result and final path if 
-			// current result is better. 
-			if (cur_cost < final_cost) 
-			{ 
-				for (int i=0; i<n; i++) //put path to final path
-		            final_path_f_BB[i] = cur_path[i]; 
-	            final_path_f_BB[n] = cur_path[0]; 
-				final_cost = cur_cost; 
-			} 
-		} 
+        int costN = boundN + graph[pathN[level-1]][pathN[0]]; //calculate result for now 
+
+        if (costN < final_cost) 
+        { 
+            for (int i=0; i<n; i++) 
+                final_path[i] = pathN[i]; 
+            final_path[n] = pathN[0]; 
+            final_cost = costN; 
+     
+        } 
+		
 		return; 
-	}
+	} 
+    
+     
+        
 
-    for (int i=0; i<n; i++) 
-	{ 
-		if (graph[cur_path[level-1]][i] != 0 && visited[i] == false) //see next node not visited and not itself 
-		{ 
-			int temp = cur_bound; 
-			cur_weight += graph[cur_path[level-1]][i]; 
+    bool curAva[n];
+	int pos;
+    int now_s;
+    int temp;
+	for (int i=0; i<n; i++) //build graph for other level 
+	{       
+    
+        now_s = INT_MAX; 
+    	for (int j=0; j<n; j++) { //find the path to choose this round for current level 
+            if (graph[pathN[level-1]][j]<now_s && pathN[level-1] != j && visited[j] == false && curAva[j]==false){
+                 now_s = graph[pathN[level-1]][j]; 
+                 pos = j;
+            }
+        }
+        if(now_s>99) return;
 
-			
-		//	if (level==1)  //if this computatuon is level 2
-		//	cur_bound -= ((firstMin(curr_path[level-1]) + 
-		//					firstMin(i))/2); 
-		//	else
-		//	cur_bound -= ((secondMin(adj, curr_path[level-1]) + 
-		//					firstMin(adj, i))/2); 
+		curAva[pos] = true; 
+        temp = boundN; 
+        boundN += now_s;     //calculate the weight now 
 
-			// curr_bound + curr_weight is the actual lower bound 
-			// for the node that we have arrived on 
-			// If current lower bound < final_res, we need to explore 
-			// the node further 
-			if (cur_bound + cur_weight < final_cost) 
-			{ 
-				cur_path[level] = i; 
-				visited[i] = true; 
+ 
+      //  cout << "this round: " << boundN << " this pos: "<< pos << " this now_s: "<< now_s;
+   
+        if (boundN < final_cost) //determine if we need to go further 
+        { 
+            pathN[level] = pos; 
+            visited[pos] = true;     
+            TSPLev(boundN, level+1, pathN); //call next level 
+        } 
+        else   return;
+        
+       
+            
 
-				// call TSPRec for the next level 
-		//		TSPRec(adj, cur_bound, cur_weight, level+1,cur_path); 
-			} 
+        
+    
+        boundN = temp; 
 
-			// Else we have to prune the node by resetting 
-			// all changes to curr_weight and curr_bound 
-			cur_weight -= graph[cur_path[level-1]][i]; 
-			cur_bound = temp; 
-
-		} 
-	}
-
-
-
-
-}
+    
+        
+        visited[pos] = false; 
+		
+	} 
+} 
 void TSP_BB(){
 
-
-
-    int cur_path[n+1]; //for record the path to current 
-    bool visited[n]; //for record the node which is visited
-	int cur_bound = 0; //lower bound
-    int graph_f_BB[n][n];
-    final_path_f_BB = new int(n+1);
-	memset(cur_path, -1, sizeof(cur_path)); 
-	memset(visited, 0, sizeof(cur_path)); 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-	
-    for(int i=0;i<n;i++)    //copy global graph to local graph for after substract
-        for(int j=0;j<n;j++)
-            graph_f_BB[i][j] = graph[i][j]; 
+    int graphB[n][n];
+    int pathN[n+1]; //initialization
+	int boundN = 0;  
+	int small;
+    memset(pathN, -1, sizeof(pathN)); 
+	memset(visited, 0, sizeof(pathN)); 
+  
+/*
+ for (int i=0; i<n; i++)  {
+       
+        for(int j =0;j<n;j++){
+            
+                cout << graph[i][j]<< " ";
+        }
+        cout <<endl;
+
+    }
+   */
+   //calculate for first lower bound (row)
+	for (int i=0; i<n; i++)  {
+        small = firSmall(i);
+        boundN +=  small;
+        for(int j =0;j<n;j++){
+            if(i!=j)
+                graph[i][j] -= small;
+        }
+
+    }
+
+
+    for (int i=0; i<n; i++)  {
+        small = firSmall_c(i);
+        boundN +=  small;
+        for(int j =0;j<n;j++){
+            if(i!=j)
+                graph[j][i] -= small;
+        }
+    }
+	/*	
+        for (int i=0; i<n; i++)  {
+       
+        for(int j =0;j<n;j++){
+            
+                cout << graph[i][j]<< " ";
+        }
+        cout <<endl;
+
+    }
+  
+    cout << boundN << endl;
+
     
-    // Compute initial bound 
-	for (int i=0; i<n; i++) 
-	//	cur_bound += firstMin(i); 
+*/
 	
-	visited[0] = true; // first node visited 
-	cur_path[0] = 0; //current path only first node
+	visited[0] = true; //first is 0  
+	pathN[0] = 0; 
 
 	
-	TSP_BB_lev(cur_bound, 0, 1, cur_path, visited); 
+	TSPLev(boundN, 1, pathN); //start next level 
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double diff = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     diff /= 1000000;
 
-    cout.setf(ios::fixed);
+   
     // write the answer to BF.txt
-    cout << setprecision(6)<<diff<< endl;
+    
     fstream file;
-
+    
     file.open("BB.txt",ios::out);
+    file.setf(ios::fixed);
     file << "Cost     : "<< final_cost << endl;
-    file << "Solution : 0 - ";
+    file << "Solution : ";
     for(int i=0;i<n;i++){
-        file << final_path_f_BB[i] <<" - ";
+        file << final_path[i] <<" - ";
     }
     file << "0" << endl;
     file << "Time     : " << setprecision(6)<<diff<< endl;
@@ -207,13 +297,14 @@ int main(void){
     cout << n<< endl;
     */
     
-
+  //  visited = new bool(n);
+   // final_path = new int (n+1);
 
     TSP_brute();
-
-
-
-    system("pause");
+   // cout << "here";
+    TSP_BB();
+    cout << final_cost;
+  //  system("pause");
 
     return 0;
 }
