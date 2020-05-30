@@ -99,12 +99,13 @@ void TSP_brute(){
     fstream file;
     file.open("BF.txt",ios::out);
     file.setf(ios::fixed);
-    file << "Cost     : "<< cost << endl;
+    
     file << "Solution : 0 - ";
     for(int i=0;i<final_path.size();i++){
         file << final_path[i] <<" - ";
     }
     file << "0" << endl;
+    file << "Cost     : "<< cost << endl;
     file << "Time     : " << setprecision(6)<<diff<< endl;
     file.close();
 }
@@ -113,7 +114,7 @@ void TSP_brute(){
 void TSPLev(int boundN, int level, int pathN[]) 
 { 
 	cout<<"";
-  //  cout << "level: "<< level << " bound: " << boundN<<endl;
+  
 	if (level==n) //if reach final level
 	{ 
 		
@@ -132,9 +133,6 @@ void TSPLev(int boundN, int level, int pathN[])
 		return; 
 	} 
     
-     
-        
-
     bool curAva[n];
 	int pos;
     int now_s;
@@ -154,7 +152,7 @@ void TSPLev(int boundN, int level, int pathN[])
 		curAva[pos] = true; 
         temp = boundN; 
         boundN += now_s;     //calculate the weight now 
-
+    cout<<endl;
  
       //  cout << "this round: " << boundN << " this pos: "<< pos << " this now_s: "<< now_s;
    
@@ -188,18 +186,8 @@ void TSP_BB(){
 	int small;
     memset(pathN, -1, sizeof(pathN)); 
 	memset(visited, 0, sizeof(pathN)); 
-  
-/*
- for (int i=0; i<n; i++)  {
-       
-        for(int j =0;j<n;j++){
-            
-                cout << graph[i][j]<< " ";
-        }
-        cout <<endl;
-
-    }
-   */
+ 
+   
    //calculate for first lower bound (row)
 	for (int i=0; i<n; i++)  {
         small = firSmall(i);
@@ -220,21 +208,7 @@ void TSP_BB(){
                 graph[j][i] -= small;
         }
     }
-	/*	
-        for (int i=0; i<n; i++)  {
-       
-        for(int j =0;j<n;j++){
-            
-                cout << graph[i][j]<< " ";
-        }
-        cout <<endl;
-
-    }
-  
-    cout << boundN << endl;
-
-    
-*/
+	
 	
 	visited[0] = true; //first is 0  
 	pathN[0] = 0; 
@@ -253,12 +227,13 @@ void TSP_BB(){
     
     file.open("BB.txt",ios::out);
     file.setf(ios::fixed);
-    file << "Cost     : "<< final_cost << endl;
+  
     file << "Solution : ";
     for(int i=0;i<n;i++){
         file << final_path[i] <<" - ";
     }
     file << "0" << endl;
+    file << "Cost     : "<< final_cost << endl;
     file << "Time     : " << setprecision(6)<<diff<< endl;
     file.close();
 }
@@ -287,24 +262,11 @@ int main(void){
 
     readFile();
 
-    /*
-    for(int i=0; i<n;i++){
-        for(int j=0;j<n;j++){
-            cout << graph[i][j] <<" ";
-        }
-        cout << endl;
-    }
-    cout << n<< endl;
-    */
     
-  //  visited = new bool(n);
-   // final_path = new int (n+1);
-
     TSP_brute();
-   // cout << "here";
+ 
     TSP_BB();
-    cout << final_cost;
-  //  system("pause");
+   
 
     return 0;
 }
